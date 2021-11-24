@@ -1,0 +1,166 @@
+---
+title: "Investigation into Expanding Australian Tourist Destinations"
+author: ""
+subtitle: "Project 3"
+date: "University of Sydney | DATA1001 | April 2020"
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    self_contained: yes
+    theme: flatly
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    code_folding: hide
+---
+
+<br>
+
+# Recommendaton
+
+Response for Roaming Australian Investment Group and associated stakeholders:
+Analysing data for summer mid-volume flight paths outbound from Australia leads us to recommend investment in Manila and Taipei, and discourage investment in Toronto and Jakarta. Further research is required to make significant conclusions regarding other destinations, particularly Vienna and Nagoya. 
+
+<br>
+```{r pressure, echo=FALSE, fig.cap="Flight Paths from Australia (4)", fig.align = "center", out.width = '70%'}
+#knitr::include_graphics("1199px-Map_of_Qantas_Airways_Destinations_2019.png")
+```
+<br>
+
+
+```{r, warning=FALSE, message=FALSE}
+##Data Wrangling
+
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(datasets)
+library(ggpubr)
+
+#International Airlines operating from Australia
+flights = read_csv("flights.csv")
+
+#Filter data for only summer outbound flights
+outbounds = flights %>%
+  filter(Month_num == 1 | Month_num == 2 | Month_num == 12)%>%
+  filter(In_Out == "O") %>%
+  filter(Year > 2003 & Year < 2019)#Years with incomplete data
+  
+#If december, change the year to fit the season
+outbounds$Year[outbounds$Month_num==12]=(outbounds$Year)+1  
+
+#Can only group once the months are properly shifted, would lose Month_num col
+outbounds = outbounds %>%
+  group_by(International_City, Year, All_Flights)%>%
+  count
+
+#List for filtering cities by num of flights
+list_of_cities = aggregate(outbounds$All_Flights, by=list(City=outbounds$International_City), FUN=sum)
+
+#Used to estimate proportions
+block = list_of_cities[order(list_of_cities$x),]
+#Approximate upper shifted third of listed cities -> 210-1800, 34 cities of 92
+
+#Create the list of cities for later filtering
+net <- list_of_cities %>%
+  filter(x > 210 & x < 1800) %>%
+  pull(City)
+
+#season/city/all_flights
+seasonal = aggregate(outbounds$All_Flights, by=list(Season=outbounds$Year, City=outbounds$International_City), FUN=sum)
+
+#Filter for cities with flight numbers in suitable range
+seasonal = seasonal %>%
+  filter(City %in% net)
+
+```
+
+# Evidence
+
+As contracted to ‘ascertain suitable cities with increasing but not yet significant Australian summer tourist flow for targeted tourism investment, we obtained flight data from the Australian Bureau of Statistics. We implemented filtering functions to obtain relevant data points, being only outbound summer flights. We also filtered by approximately the middle third of cities by volume of flights. 
+
+We found that despite advancements in air travel and Australia’s economy, there is no blanket increase in outbound summer travel. We therefore had to individually analyse faceted scatterplots for each city to ascertain if the linear models fit, and if subsections of the plots may follow different patterns. 
+
+The r value for the regression line of the Manila plot is 0.64, which is high for the set of facet plots. Close visual analysis of the scatterplot shows that from 2012 the data points trend upwards steadily, evidencing that only using recent data would provide a higher r value. Furthermore, the p value is 0.013, indicating the model is accurate (Fig 1). 
+
+The r and p values for the Taipei plot are 0.27 and 0.35 respectively, which are not promising. Plotting only values from 2012 season and onwards reveals the upward trend of recent years, to a revised r and p value of 0.87 and 0.023, indicating the validity of the model and the strength of the trend (Fig 2). 
+
+Investing in Jakarta and Toronto is not recommended, as evidenced by their sub-optimal plots (Fig 1), and confirmed in their subsected plots: Jakarta’s r value indicates a significant decrease in yearly flights, while Toronto’s graph depicts an almost flat line, suggesting minimal change in yearly tourism.Their respective p values confirm this (Fig 2). 
+
+Based on their 2012-onwards trends and p values, further investigation, including local investigations, is recommended for the following cities: Osaka, Santiago and Vancouver (Fig 1 & 2).
+Additional data would be needed for further in depth analysis, such as residuals plotting. 
+
+```{r, fig.width=10, fig.height=10}
+#Plot individual cities faceted
+p <- ggplot(seasonal, aes(Season,x, group=City))+
+  geom_point() + 
+  stat_smooth(se=TRUE,method="lm", fullrange=FALSE,color = "red")+
+  facet_wrap(~City)+
+  stat_cor(label.y=-200, method = "pearson",size=3, color="blue")+
+  ggtitle("Outbound Summer Flights per Year displayed by City", 
+          subtitle = "including regression line and r & p values")+
+  theme(plot.title = element_text(size = 24, face = "bold"))+
+  theme(plot.subtitle = element_text(size = 16, face="italic"))+
+  labs(y="Flights per Season", caption="Fig. 1")+
+  theme(strip.text.x = element_text(size = 12))
+
+p 
+
+#Filter for the specific cities and years relevant to discussion. YESYES NONO MAYBE*3
+potentials = c("Taipei", "Manila", "Toronto", "Jakarta", "Osaka", "Santiago", "Vancouver")
+round2 <- seasonal %>%
+  filter(City %in% potentials) %>%
+  filter(Season > 2012)
+
+#Plot new filtered cities
+r2 <- ggplot(round2, aes(Season,x,group=City))+
+  geom_point() + 
+  stat_smooth(se=TRUE,method="lm", fullrange=FALSE,color = "red")+
+  facet_wrap(~City)+
+  ggtitle("Outbound Summer Flights per Year for Specific Cities",
+          subtitle = "including regression line and r & p values")+
+  theme(plot.title = element_text(size = 24, face = "bold"))+
+  theme(plot.subtitle = element_text(size = 16, face="italic"))+
+  stat_cor(label.y=-100, method = "pearson",size=8, color="blue")+
+  labs(y="Flights per Season", caption="Fig. 2")+
+  theme(strip.text.x = element_text(size = 14))
+  
+
+r2
+
+```
+<br>
+
+# Other Evidence 
+
+Australian year-on-year tourism to Taiwan increased 60% through 2019, however, this statistic includes the entire year, not only summer months(1). Taiwan, and similarly Manila, also offer less flying time, time difference, and therefore travel costs.
+The number of total outbound Australian travellers over the year has been steadily increasing over the months and years. Furthermore, ‘Holiday’ is the most cited reason for travel for nearly all destinations, proving most travellers may be inclined to use targeted tourist services(2).
+
+A survey by online travel agency booking.com listed Osaka and Manila as two of the fastest growing international destinations booked by Australians(3).
+
+# Reflection
+
+DATA1001 was my first experience with statistics, and alleviated my anxiety for the subject. I’ve developed a solid basis in R and ggplot, and understanding data and concepts, all of which enabled this report. These developments will help me as I study AI and similar topics for my CS major. 
+
+# Notes and Acknowledgements
+
+Citations in the 'Other Evidence' section are formatted to prioritise brevity.
+
+From ED, thanks to:
+Jackson Zhou in "Generate a list to use in a filter"
+Mitchell Perl in "Creating an Incoming Passengers Variable"
+Di Warren in ""Recommendation" (Regarding global considerations for the recommendation)
+
+# References
+
+1.	Taiwan Tourism gets Aussie boost with new centre | Traveltalk. (2019). Retrieved 16 November 2020, from https://www.traveltalkmag.com.au/news/taiwan-tourism-gets-aussie-boost-with-new-centre
+2.	AFTA Travel Trends. (2020). Retrieved 17 November 2020, from https://www.afta.com.au/uploads/582/190312_february_afta-travel-trends-report_final_v2.pdf
+3.	Australian traveller statistics 2020. (2020). Retrieved 17 November 2020, from https://www.finder.com.au/australian-traveller-statistics  
+4.  From Wikimedia Commons.(2019). Map of Qantas Airways Destinations 2019. https://en.wikipedia.org/wiki/File:Map_of_Qantas_Airways_Destinations_2019.png
+
+
+
+
+
+
