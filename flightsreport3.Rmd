@@ -140,10 +140,6 @@ The number of total outbound Australian travellers over the year has been steadi
 
 A survey by online travel agency booking.com listed Osaka and Manila as two of the fastest growing international destinations booked by Australians(3).
 
-# Reflection
-
-DATA1001 was my first experience with statistics, and alleviated my anxiety for the subject. I’ve developed a solid basis in R and ggplot, and understanding data and concepts, all of which enabled this report. These developments will help me as I study AI and similar topics for my CS major. 
-
 # Notes and Acknowledgements
 
 Citations in the 'Other Evidence' section are formatted to prioritise brevity.
